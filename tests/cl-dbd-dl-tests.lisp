@@ -16,7 +16,7 @@
 (test ground-query-succeeds-against-ground-fact
   "A ground query matching an identical ground fact must return non-nil.
    Unifying equal ground terms yields '(); (and '() ...) short-circuits
-   because '() is false in CL, so no result is ever collected."
+   because '() is false, so no result is ever collected."
   (with-cleaned-db
     (cl-dbd:<- (parent alice bob))
     (let ((result (cl-dbd:?- (parent alice bob))))
@@ -99,7 +99,7 @@
 
 
 (test variable-bound-to-nil-returns-nil
-  "If ?x is bound to NIL the result must be NIL."
+  "If ?x is bound to NIL, then the result must be NIL."
   (let* ((bindings '((?x . nil)))
          (result   (cl-dbd:apply-substitutions '?x bindings)))
     (is (null result)
@@ -119,7 +119,7 @@
 
 (test naf-incorrectly-succeeds-when-matching-ground-fact-exists
   "resolve-body on (not (parent ?x alice)) with empty bindings must return
-   NIL when (parent bob alice) is in the database -- some X satisfies
+   NIL when (parent bob alice) is in the database -- some X satisfies 
    (parent X alice)."
   (with-cleaned-db
     (cl-dbd:<- (parent bob alice))
@@ -132,7 +132,7 @@
 (test naf-correctly-fails-when-variable-is-pre-bound
   "Contrast: when ?x is already bound to bob in the incoming bindings,
    apply-substitutions grounds the literal to (parent bob alice) before
-   the NAF check.  fact-exists-p then correctly detects the fact."
+   the NAF check. fact-exists-p then correctly detects the fact."
   (with-cleaned-db
     (cl-dbd:<- (parent bob alice))
     (let ((result (cl-dbd:resolve-body '((not (parent ?x alice)))
