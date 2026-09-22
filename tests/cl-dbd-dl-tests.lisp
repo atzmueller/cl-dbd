@@ -1,11 +1,6 @@
-(defpackage #:cl-dbd-tests
-  (:use #:cl #:fiveam))
+(in-package :cl-dbd-test)
 
-(in-package #:cl-dbd-tests)
-
-(def-suite cl-dbd-suite :description "Tests for the cl-dbd Datalog engine.")
-
-(in-suite cl-dbd-suite)
+(def-suite* cl-dbd-test-sql :in cl-dbd-test-system)
 
 
 (defmacro with-cleaned-db (&body body)
@@ -29,7 +24,7 @@
    when a ground body literal unifies with a ground fact."
   (with-cleaned-db
     (cl-dbd:<- (foo bar))
-    (let ((result (cl-dbd:resolve-body '((foo bar)) '())))
+    (let ((result (cl-dbd::resolve-semi-naive '((foo bar)) '() 0 (make-hash-table))))
       (is (equal result '(()))
           "resolve-body returned ~S; expected '(()) for a ground match"
           result))))
@@ -41,7 +36,7 @@
     (cl-dbd:<- (a))
     (cl-dbd:<- (b) (a))
     (cl-dbd:forward-chain)
-    (is (cl-dbd:fact-exists-p '(b))
+    (is (cl-dbd::fact-matches-p '(b))
         "(b) should be derived by (b :- a) but is absent")))
 
 
@@ -93,7 +88,7 @@
 (test transitive-chain-resolves-to-ground-value
   "With bindings ((?x . ?y) (?y . alice)), applying to ?x must yield alice."
   (let* ((bindings '((?x . ?y) (?y . alice)))
-         (result   (cl-dbd:apply-substitutions '?x bindings)))
+         (result   (cl-dbd::apply-substitutions '?x bindings)))
     (is (equal result 'alice)
         "Expected alice via ?x->?y->alice; got ~S" result)))
 
@@ -101,7 +96,7 @@
 (test variable-bound-to-nil-returns-nil
   "If ?x is bound to NIL, then the result must be NIL."
   (let* ((bindings '((?x . nil)))
-         (result   (cl-dbd:apply-substitutions '?x bindings)))
+         (result   (cl-dbd::apply-substitutions '?x bindings)))
     (is (null result)
         "?x bound to NIL should yield NIL, not the symbol ?x; got ~S"
         result)))
@@ -112,7 +107,7 @@
    (parent ?x bob) with ((?x . ?y) (?y . alice)) must become
    (parent alice bob)"
   (let* ((bindings '((?x . ?y) (?y . alice)))
-         (result   (cl-dbd:apply-substitutions '(parent ?x bob) bindings)))
+         (result   (cl-dbd::apply-substitutions '(parent ?x bob) bindings)))
     (is (equal result '(parent alice bob))
         "Expected (parent alice bob); got ~S" result)))
 
@@ -123,7 +118,7 @@
    (parent X alice)."
   (with-cleaned-db
     (cl-dbd:<- (parent bob alice))
-    (let ((result (cl-dbd:resolve-body '((not (parent ?x alice))) '())))
+    (let ((result (cl-dbd::resolve-semi-naive '((not (parent ?x alice))) '() 0 (make-hash-table))))
       (is (null result)
           "NAF with free ?x should fail when (parent bob alice) exists; got ~S"
           result))))
@@ -135,7 +130,9 @@
    the NAF check. fact-exists-p then correctly detects the fact."
   (with-cleaned-db
     (cl-dbd:<- (parent bob alice))
-    (let ((result (cl-dbd:resolve-body '((not (parent ?x alice)))
-                                         '((?x . bob)))))
+    (let ((result (cl-dbd::resolve-semi-naive '((not (parent ?x alice))) 
+                                         '((?x . bob))
+                                         0
+                                         (make-hash-table))))
       (is (null result)
           "NAF (not (parent bob alice)) with ?x=bob pre-bound should fail"))))

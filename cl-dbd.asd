@@ -28,7 +28,8 @@
   :components ((:file "tests/package")
 	       (:file "tests/cl-dbd-test-system")
 	       (:file "tests/cl-dbd-ra-tests")
-	       (:file "tests/cl-dbd-sql-tests"))
+	       (:file "tests/cl-dbd-sql-tests")
+               (:file "tests/cl-dbd-dl-tests"))
   :perform (asdf:test-op (o s)
 			 (uiop:symbol-call
 			  :fiveam
